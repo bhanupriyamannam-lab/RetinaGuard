@@ -514,16 +514,6 @@ export const LoginPage: React.FC = () => {
         </div>
       </div>
 
-        {/* Minimal Understated Security Footer */}
-        <div className="mt-5 flex items-center justify-center gap-1.5 text-slate-400 text-xs">
-          <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-          <span>Secure clinical workspace</span>
-        </div>
-      </div>
-
-      {/* Bottom Spacer */}
-      <div className="h-4 sm:h-8" />
-
       {/* FORGOT PASSWORD MODAL */}
       {isForgotModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
