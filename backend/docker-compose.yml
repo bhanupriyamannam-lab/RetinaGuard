@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: retinaguard_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: retinaguard_db
+      POSTGRES_USER: retinaguard
+      POSTGRES_PASSWORD: secure_retinaguard_pg_password_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U retinaguard -d retinaguard_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: retinaguard_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: retinaguard_api
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_demo_data &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120"
+    environment:
+      SECRET_KEY: retinaguard-production-docker-secret-2026
+      DEBUG: "True"
+      DATABASE_URL: postgresql://retinaguard:secure_retinaguard_pg_password_2026@db:5432/retinaguard_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      AI_PROVIDER: mock
+      DEMO_MODE: "true"
+      ALLOWED_HOSTS: "*"
+    ports:
+      - "8000:8000"
+    volumes:
+      - media_data:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  media_data:

@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-primary: #1b52eb;
+    --brand-navy: #0f172a;
+    --clinical-bg: #f8fafc;
+    --clinical-border: #e2e8f0;
+  }
+  
+  body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+  }
+
+  /* Ensure all numbers in medical tables and stats use tabular figures for perfect vertical alignment */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Premium Clinical Cards */
+.clinical-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.clinical-card:hover {
+  border-color: #cbd5e1;
+}
+
+.clinical-card-elevated {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+}
+
+/* Medical Viewport Background */
+.medical-viewport-bg {
+  background: radial-gradient(circle at center, #0b1120 0%, #030712 100%);
+}
+
+/* Smooth Clear Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.7);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+/* Print Specific Rules for Medical Handout */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  header, aside, nav, .print\:hidden {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+}
