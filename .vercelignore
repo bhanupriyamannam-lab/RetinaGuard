@@ -1,0 +1,6 @@
+backend/
+*.py
+*.pyc
+requirements.txt
+db.sqlite3
+Procfile
