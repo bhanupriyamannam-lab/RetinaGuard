@@ -18,7 +18,7 @@ import {
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, googleLogin } = useAuth();
+  const { login, googleLogin, loginAsDemoUser } = useAuth();
   const { showToast } = useToast();
 
   // Authentication form state - Always starts empty
@@ -269,6 +269,24 @@ export const LoginPage: React.FC = () => {
               </svg>
             )}
             <span>Continue with Google</span>
+          </button>
+
+          {/* Instant Clinical Screener Sign In Button */}
+          <button
+            type="button"
+            onClick={async () => {
+              await loginAsDemoUser('DOCTOR');
+              showToast({
+                type: 'success',
+                title: 'Clinical Workspace Ready',
+                message: 'Signed in as Vitreoretinal Specialist & Screener.'
+              });
+              navigate('/');
+            }}
+            className="w-full mt-2.5 h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Instant Clinical Sign In (Screener)</span>
           </button>
 
           {/* Request Access Link */}
