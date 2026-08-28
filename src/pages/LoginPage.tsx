@@ -21,11 +21,23 @@ export const LoginPage: React.FC = () => {
   const { login, googleLogin, loginAsDemoUser } = useAuth();
   const { showToast } = useToast();
 
-  // Authentication form state - Always starts empty
+  // Mode: 'signin' | 'register'
+  const [authMode, setAuthMode] = useState<'signin' | 'register'>('signin');
+
+  // Sign In form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // Register form state
+  const [regFullName, setRegFullName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regRole, setRegRole] = useState<'DOCTOR' | 'HEALTHCARE_WORKER' | 'ADMIN'>('DOCTOR');
+  const [regOrg, setRegOrg] = useState('Regional Eye Care Center');
+  const [regPhone, setRegPhone] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -71,11 +83,66 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!regFullName.trim()) {
+      setErrorMessage('Please enter your full name.');
+      return;
+    }
+    if (!regEmail.trim()) {
+      setErrorMessage('Please enter your email address.');
+      return;
+    }
+    if (!regPassword || regPassword.length < 6) {
+      setErrorMessage('Password must be at least 6 characters.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const nameParts = regFullName.trim().split(' ');
+      const firstName = nameParts[0] || 'Clinician';
+      const lastName = nameParts.slice(1).join(' ') || 'Screener';
+
+      const newUser = {
+        id: 'usr-' + Math.random().toString(36).substring(2, 9),
+        email: regEmail.trim(),
+        first_name: firstName,
+        last_name: lastName,
+        role: regRole,
+        phone_number: regPhone.trim(),
+        designation: regRole === 'DOCTOR' ? 'Vitreoretinal Specialist' : regRole === 'HEALTHCARE_WORKER' ? 'Primary Health Screener' : 'Clinical Administrator',
+        organization_name: regOrg.trim() || 'Regional Eye Care Center'
+      };
+
+      localStorage.setItem('retinaguard_user', JSON.stringify(newUser));
+      localStorage.setItem('retinaguard_access_token', 'token_' + Date.now());
+
+      showToast({
+        type: 'success',
+        title: 'Account Created Successfully',
+        message: `Welcome, Dr. / Screener ${firstName} ${lastName}!`
+      });
+      navigate('/');
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Unable to create account. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setErrorMessage(null);
     setIsGoogleLoading(true);
     try {
       await googleLogin();
+      showToast({
+        type: 'success',
+        title: 'Google Sign-In Successful',
+        message: 'Welcome to your clinical workspace.'
+      });
       navigate('/');
     } catch (err: any) {
       setErrorMessage(err?.message || 'Google sign-in is not configured yet.');
@@ -98,7 +165,7 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-slate-50 flex flex-col justify-between items-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden">
-      {/* Subtle Understated Ambient Background Ring (Calm Clinical Aesthetic) */}
+      {/* Subtle Ambient Background Ring */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-br from-blue-100/40 via-slate-100/30 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute -top-32 -right-32 w-96 h-96 bg-blue-50/60 rounded-full blur-2xl pointer-events-none -z-10" />
 
@@ -106,20 +173,46 @@ export const LoginPage: React.FC = () => {
       <div className="h-4 sm:h-8" />
 
       {/* Main Centered Login Container */}
-      <div className="w-full max-w-[440px] my-auto">
+      <div className="w-full max-w-[460px] my-auto">
         {/* Authentication Card */}
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-900/5 p-7 sm:p-9 transition-all">
           {/* Logo and Brand Header */}
           <div className="flex flex-col items-center text-center">
             <BrandLogo size="lg" showSubtitle={true} />
             
-            <div className="mt-6 space-y-1">
+            <div className="mt-5 space-y-1">
               <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                Welcome back
+                {authMode === 'signin' ? 'Welcome back' : 'Create an Account'}
               </h1>
               <p className="text-xs font-medium text-slate-500">
-                Sign in to your clinical workspace
+                {authMode === 'signin' ? 'Sign in to your clinical workspace' : 'Register for your clinical screening workspace'}
               </p>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div className="w-full grid grid-cols-2 p-1 mt-5 bg-slate-100 rounded-xl border border-slate-200/70 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => { setAuthMode('signin'); setErrorMessage(null); }}
+                className={`py-2 rounded-lg transition-all cursor-pointer ${
+                  authMode === 'signin'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('register'); setErrorMessage(null); }}
+                className={`py-2 rounded-lg transition-all cursor-pointer ${
+                  authMode === 'register'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Create Account
+              </button>
             </div>
           </div>
 
@@ -131,104 +224,218 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            {/* Email Address */}
-            <div>
-              <label htmlFor="login-email" className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Email address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <input
-                  id="login-email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setErrorMessage(null); }}
-                  placeholder="name@clinicalcenter.org"
-                  className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700">
-                  Password
+          {/* SIGN IN FORM */}
+          {authMode === 'signin' ? (
+            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+              {/* Email Address */}
+              <div>
+                <label htmlFor="login-email" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Email address
                 </label>
-                <button
-                  type="button"
-                  onClick={() => { setIsForgotModalOpen(true); setForgotSubmitted(false); }}
-                  className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
-                >
-                  Forgot password?
-                </button>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-4 h-4" />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    id="login-email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setErrorMessage(null); }}
+                    placeholder="name@clinicalcenter.org"
+                    className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors"
+                  />
                 </div>
-                <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setErrorMessage(null); }}
-                  placeholder="Enter your password"
-                  className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
               </div>
-            </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center pt-0.5">
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer select-none">
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setIsForgotModalOpen(true); setForgotSubmitted(false); }}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setErrorMessage(null); }}
+                    placeholder="Enter your password"
+                    className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Me */}
+              <div className="flex items-center pt-0.5">
+                <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 focus:ring-offset-0 transition-all cursor-pointer"
+                  />
+                  <span>Remember me</span>
+                </label>
+              </div>
+
+              {/* Primary Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading || isGoogleLoading}
+                className="w-full h-11 mt-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            /* CREATE ACCOUNT / REGISTRATION FORM */
+            <form onSubmit={handleRegisterSubmit} className="mt-5 space-y-3.5">
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Full Name
+                </label>
                 <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 focus:ring-offset-0 transition-all cursor-pointer"
+                  type="text"
+                  required
+                  value={regFullName}
+                  onChange={(e) => { setRegFullName(e.target.value); setErrorMessage(null); }}
+                  placeholder="Dr. Bhanupriya Mannam"
+                  className="w-full h-10 px-3.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors"
                 />
-                <span>Remember me</span>
-              </label>
-            </div>
+              </div>
 
-            {/* Primary Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading || isGoogleLoading}
-              className="w-full h-11 mt-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
+              {/* Email Address */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={regEmail}
+                  onChange={(e) => { setRegEmail(e.target.value); setErrorMessage(null); }}
+                  placeholder="bhanupriya@hospital.org"
+                  className="w-full h-10 px-3.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors"
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Create Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={regPassword}
+                  onChange={(e) => { setRegPassword(e.target.value); setErrorMessage(null); }}
+                  placeholder="Min. 6 characters"
+                  className="w-full h-10 px-3.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors"
+                />
+              </div>
+
+              {/* Clinical Role Selection */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Clinical Role
+                  </label>
+                  <select
+                    value={regRole}
+                    onChange={(e) => setRegRole(e.target.value as any)}
+                    className="w-full h-10 px-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                  >
+                    <option value="DOCTOR">Ophthalmologist</option>
+                    <option value="HEALTHCARE_WORKER">Health Screener</option>
+                    <option value="ADMIN">Clinical Admin</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Phone (Optional)
+                  </label>
+                  <input
+                    type="tel"
+                    value={regPhone}
+                    onChange={(e) => setRegPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                  />
+                </div>
+              </div>
+
+              {/* Hospital Organization */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  Eye Hospital / Center
+                </label>
+                <input
+                  type="text"
+                  value={regOrg}
+                  onChange={(e) => setRegOrg(e.target.value)}
+                  placeholder="Regional Eye Hospital"
+                  className="w-full h-10 px-3.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                />
+              </div>
+
+              {/* Submit Register Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-11 mt-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Create Account & Sign In</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
           {/* Divider */}
-          <div className="relative my-5">
+          <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200" />
             </div>
@@ -289,16 +496,31 @@ export const LoginPage: React.FC = () => {
             <span>Instant Clinical Sign In (Screener)</span>
           </button>
 
-          {/* Request Access Link */}
-          <div className="mt-6 pt-5 border-t border-slate-100 text-center text-xs text-slate-500">
-            <span>Don't have an account? </span>
-            <button
-              type="button"
-              onClick={() => { setIsRequestModalOpen(true); setReqSubmitted(false); }}
-              className="font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
-            >
-              Request access
-            </button>
+          {/* Switch Mode Footer */}
+          <div className="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
+            {authMode === 'signin' ? (
+              <>
+                <span>Don't have an account? </span>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('register'); setErrorMessage(null); }}
+                  className="font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
+                >
+                  Create an account
+                </button>
+              </>
+            ) : (
+              <>
+                <span>Already registered? </span>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('signin'); setErrorMessage(null); }}
+                  className="font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
+                >
+                  Sign in here
+                </button>
+              </>
+            )}
           </div>
         </div>
 
